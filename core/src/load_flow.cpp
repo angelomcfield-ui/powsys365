@@ -13,12 +13,12 @@ LoadFlowSolver::LoadFlowSolver(const PowerSystem& system, double tolerance, int 
     : system_(system), tolerance_(tolerance), max_iterations_(max_iter), method_(method) {}
 
 LoadFlowResult LoadFlowSolver::solve() {
-    if (method_ == "NR") {
+    if (method_ == "GS") {
+        return solveGaussSeidel();
+    } else if (method_ == "NR") {
         return solveNewtonRaphson();
     } else if (method_ == "FDBX") {
         return solveFastDecoupled();
-    } else if (method_ == "GS") {
-        return solveGaussSeidel();
     } else {
         throw std::invalid_argument("Unknown load flow method");
     }
@@ -172,9 +172,99 @@ LoadFlowResult LoadFlowSolver::solveFastDecoupled() {
 }
 
 LoadFlowResult LoadFlowSolver::solveGaussSeidel() {
-    // Placeholder - implementar Gauss-Seidel
+    size_t n = system_.getNumBuses();
+    std::vector<Complex> v(n);
+    // Inicializar voltajes
+    for (size_t i = 0; i < n; ++i) {
+        const auto& bus = system_.getBuses()[i];
+        v[i] = MathUtils::polarToRect(bus.vm_pu, bus.va_deg);
+    }
+
+    ComplexMatrix ybus(n, std::vector<Complex>(n, Complex(0.0, 0.0)));
+    buildYbus(ybus);
+
     LoadFlowResult result;
     result.converged = false;
+    result.iterations = 0;
+
+    for (int iter = 0; iter < max_iterations_; ++iter) {
+        double max_change = 0.0;
+
+        for (size_t i = 0; i < n; ++i) {
+            const auto& bus = system_.getBuses()[i];
+            Complex v_old = v[i];
+
+            if (bus.type == 3) { // Slack bus - voltaje fijo
+                continue;
+            }
+
+            // Calcular corriente de carga
+            Complex s_load(0.0, 0.0);
+            for (const auto& load : system_.getLoads()) {
+                if (load.bus == bus.number) {
+                    s_load = Complex(load.p_mw / system_.getBaseMVA(), load.q_mvar / system_.getBaseMVA());
+                    break;
+                }
+            }
+
+            // Calcular corriente de generacion
+            Complex s_gen(0.0, 0.0);
+            for (const auto& gen : system_.getGenerators()) {
+                if (gen.bus == bus.number) {
+                    s_gen = Complex(gen.p_mw / system_.getBaseMVA(), gen.q_mvar / system_.getBaseMVA());
+                    break;
+                }
+            }
+
+            Complex s = s_gen - s_load; // Potencia neta inyectada
+
+            // Calcular suma Y_ij * V_j para j != i
+            Complex sum_yv(0.0, 0.0);
+            for (size_t j = 0; j < n; ++j) {
+                if (j != i) {
+                    sum_yv += ybus[i][j] * v[j];
+                }
+            }
+
+            // Nueva tension
+            Complex v_new = (s / MathUtils::conj(v[i]) - sum_yv) / ybus[i][i];
+
+            // Para buses PV, mantener magnitud
+            if (bus.type == 2) { // PV bus
+                double mag = std::abs(v_new);
+                v_new = MathUtils::polarToRect(bus.vm_pu, std::arg(v_new) * 180.0 / M_PI);
+            }
+
+            v[i] = v_new;
+            max_change = std::max(max_change, std::abs(v_new - v_old));
+        }
+
+        if (max_change < tolerance_) {
+            result.converged = true;
+            result.iterations = iter + 1;
+            break;
+        }
+
+        result.iterations = iter + 1;
+    }
+
+    // Llenar resultado
+    result.vm_pu.resize(n);
+    result.va_deg.resize(n);
+    for (size_t i = 0; i < n; ++i) {
+        auto polar = MathUtils::rectToPolar(v[i]);
+        result.vm_pu[i] = polar.first;
+        result.va_deg[i] = polar.second;
+    }
+
+    // Calcular potencias (simplificado)
+    result.p_gen.assign(n, 0.0);
+    result.q_gen.assign(n, 0.0);
+    result.p_load.assign(n, 0.0);
+    result.q_load.assign(n, 0.0);
+    result.total_ploss = 0.0;
+    result.total_qloss = 0.0;
+
     return result;
 }
 
