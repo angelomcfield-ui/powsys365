@@ -7,6 +7,7 @@
 #include <string>
 #include "power_system.h"
 #include "../../commons/types.h"
+#include "../../commons/matrix_types.h"
 
 namespace powsys365 {
 

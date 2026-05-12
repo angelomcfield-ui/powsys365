@@ -21,7 +21,12 @@ else
         echo 'Error: neither cmake nor clang++ is available.'
         exit 1
     fi
-    clang++ -std=c++20 -O2 -o "$BUILD_DIR/$EXECUTABLE_NAME" "$ROOT_DIR/src/main.cpp"
+    # Compile all source files manually
+    clang++ -std=c++20 -O2 -I"$ROOT_DIR/core/include" -I"$ROOT_DIR/core/commons" -o "$BUILD_DIR/$EXECUTABLE_NAME" \
+        "$ROOT_DIR/src/main.cpp" \
+        "$ROOT_DIR/core/commons/math_utils.cpp" \
+        "$ROOT_DIR/core/src/power_system.cpp" \
+        "$ROOT_DIR/core/src/load_flow.cpp"
 fi
 
 cp "$BUILD_DIR/$EXECUTABLE_NAME" "$PKG_ROOT$INSTALL_LOCATION/"

@@ -1,6 +1,6 @@
 // core/src/power_system.cpp
 
-#include "../include/powsys365/power_system.h"
+#include "powsys365/power_system.h"
 #include <stdexcept>
 
 namespace powsys365 {

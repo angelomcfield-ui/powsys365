@@ -1,8 +1,8 @@
 // core/src/load_flow.cpp
 
-#include "../include/powsys365/load_flow.h"
-#include "../../commons/math_utils.h"
-#include "../../commons/constants.h"
+#include "powsys365/load_flow.h"
+#include "math_utils.h"
+#include "constants.h"
 #include <cmath>
 #include <iostream>
 #include <algorithm>

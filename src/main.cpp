@@ -1,6 +1,6 @@
 #include <iostream>
-#include "../core/include/powsys365/power_system.h"
-#include "../core/include/powsys365/load_flow.h"
+#include "powsys365/power_system.h"
+#include "powsys365/load_flow.h"
 
 int main() {
     std::cout << "POWSYS365 - Power System Analysis Platform\n";
