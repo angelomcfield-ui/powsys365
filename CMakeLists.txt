@@ -11,5 +11,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(core)
 add_subdirectory(src)
+add_subdirectory(ui)
+add_subdirectory(ide)
+add_subdirectory(simulation)
+add_subdirectory(scada)
+add_subdirectory(results)
+add_subdirectory(ai)
+add_subdirectory(tests)
+add_subdirectory(python)
 
 install(FILES README.md DESTINATION share/powsys365)
