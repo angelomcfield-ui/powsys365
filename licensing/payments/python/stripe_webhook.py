@@ -142,8 +142,41 @@ def handle_checkout_session_completed(event_data: dict) -> dict:
         "license_key": _generate_license_key(tier),
     }
 
-    # TODO: Update database with new license
-    # This would integrate with the license database
+    # Update database with new license
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        import sys
+        sys.path.insert(0, '/app/licensing/api/backend')
+        from models import License, ActivationLog
+        
+        db_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/powsy365')
+        engine = create_engine(db_url)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        
+        license_record = License(
+            license_key=result["license_key"],
+            tier=result["tier"],
+            status="active",
+            max_devices=1 if result["tier"] in ["trial", "student"] else 5 if result["tier"] == "basic" else 999,
+            user_id=customer_id
+        )
+        session.add(license_record)
+        
+        log = ActivationLog(
+            license_key=result["license_key"],
+            action="license_created_from_stripe",
+            ip_address=event_data.get("request", {}).get("id", "unknown")
+        )
+        session.add(log)
+        session.commit()
+        session.close()
+        result["database_updated"] = True
+    except Exception as e:
+        result["database_updated"] = False
+        result["database_error"] = str(e)
+    
     _notify_license_created(result)
 
     return result
