@@ -1,0 +1,2 @@
+-- POWSYS365 placeholder schema
+-- Add PostgreSQL schema definitions for projects, buses, lines, generators, loads, and results here.
