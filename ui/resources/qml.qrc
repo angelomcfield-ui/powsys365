@@ -1,25 +1,22 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
-<qresource>
-    <file>main.qml</file>
-    <file>MainWindow.qml</file>
-    <file>SLDCanvas.qml</file>
-    <file>BusComponent.qml</file>
-    <file>LineComponent.qml</file>
-    <file>GeneratorComponent.qml</file>
-    <file>LoadComponent.qml</file>
-    <file>Toolbar.qml</file>
-    <file>PropertiesPanel.qml</file>
-    <file>DarkTheme.qml</file>
-    <file>LightTheme.qml</file>
-</qresource>
-<qresource prefix="/icons">
-    <file alias="app_icon.png">resources/icons/app_icon.png</file>
-</qresource>
-<qresource prefix="/symbols">
-    <file alias="bus_symbol.svg">resources/symbols/bus_symbol.svg</file>
-    <file alias="line_symbol.svg">resources/symbols/line_symbol.svg</file>
-    <file alias="gen_symbol.svg">resources/symbols/gen_symbol.svg</file>
-    <file alias="load_symbol.svg">resources/symbols/load_symbol.svg</file>
-</qresource>
+<RCC>
+    <qresource prefix="/qml">
+        <file>../qml/main.qml</file>
+        <file>../qml/DarkTheme.qml</file>
+        <file>../qml/LightTheme.qml</file>
+        <file>../qml/SLDCanvas.qml</file>
+        <file>../qml/BusComponent.qml</file>
+        <file>../qml/LineComponent.qml</file>
+        <file>../qml/GeneratorComponent.qml</file>
+        <file>../qml/LoadComponent.qml</file>
+        <file>../qml/TransformerComponent.qml</file>
+        <file>../qml/Toolbar.qml</file>
+        <file>../qml/PropertiesPanel.qml</file>
+    </qresource>
+    <qresource prefix="/fonts">
+        <!-- SF Pro fonts would be placed here if bundled -->
+        <!-- Using system fonts as fallback (see main.cpp) -->
+    </qresource>
+    <qresource prefix="/icons">
+        <!-- Icons can be added here -->
+    </qresource>
 </RCC>

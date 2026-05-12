@@ -1,0 +1,33 @@
+@PACKAGE_INIT@
+
+# =============================================================================
+# POWSYS365 CMake Configuration File
+# =============================================================================
+# Usage:
+#   find_package(POWSYS365 REQUIRED)
+#   target_link_libraries(your_target POWSYS365::powsys365_core)
+# =============================================================================
+
+include(CMakeFindDependencyMacro)
+
+# Find dependencies that consumers also need
+find_dependency(Eigen3 3.4)
+find_dependency(Threads)
+
+# Optional dependencies
+include(FindOptionalPackage)
+find_dependency(PostgreSQL)
+
+if(@ENABLE_OPENMP@)
+    find_dependency(OpenMP)
+endif()
+
+if(@Qt6_FOUND@)
+    find_dependency(Qt6 COMPONENTS Core Gui Widgets Quick Charts Network Sql WebEngineQuick)
+endif()
+
+# Include targets file
+include("${CMAKE_CURRENT_LIST_DIR}/POWSYS365Targets.cmake")
+
+# Verify required components are available
+check_required_components(POWSYS365)

@@ -1,0 +1,106 @@
+{
+  "id": "power_flow_tool",
+  "name": "Power Flow Analysis Tool",
+  "version": "1.0.0",
+  "description": "Herramienta completa para analisis de flujo de carga en sistemas electricos de potencia. Soporta metodos Newton-Raphson, Gauss-Seidel y Fast Decoupled. Visualiza resultados y exporta a CSV.",
+  "author": "POWSYS365 Team",
+  "license": "Proprietary",
+  "language": "python",
+  "entryPoint": "src/main.py",
+  "icon": "assets/icon.svg",
+  "minApiVersion": "1.0.0",
+  "maxApiVersion": "1.1.0",
+  "permissions": [
+    "electric_data",
+    "filesystem",
+    "logging",
+    "gui"
+  ],
+  "config": {
+    "default_method": "newton_raphson",
+    "max_iterations": 20,
+    "tolerance": 1e-06,
+    "auto_export": true,
+    "export_format": "csv",
+    "show_convergence": true,
+    "voltage_limits": {
+      "vmax": 1.1,
+      "vmin": 0.9
+    }
+  },
+  "dependencies": [
+    {
+      "name": "json",
+      "version": "builtin",
+      "optional": false
+    },
+    {
+      "name": "csv",
+      "version": "builtin",
+      "optional": false
+    },
+    {
+      "name": "math",
+      "version": "builtin",
+      "optional": false
+    }
+  ],
+  "menuItems": [
+    {
+      "label": "Ejecutar Flujo de Carga",
+      "action": "run_power_flow",
+      "shortcut": "Ctrl+Shift+F",
+      "icon": "run.svg"
+    },
+    {
+      "label": "Exportar Resultados",
+      "action": "export_results",
+      "shortcut": "Ctrl+Shift+E",
+      "icon": "export.svg"
+    },
+    {
+      "label": "Visualizar Red",
+      "action": "visualize_network",
+      "shortcut": "Ctrl+Shift+V",
+      "icon": "chart.svg"
+    }
+  ],
+  "hooks": {
+    "onLoad": true,
+    "onUnload": true,
+    "onExecute": true,
+    "onEnable": true,
+    "onDisable": false
+  },
+  "sandbox": {
+    "enabled": true,
+    "networkAccess": false,
+    "fileSystemAccess": true,
+    "databaseAccess": false,
+    "guiAccess": true,
+    "systemAccess": false,
+    "maxMemoryMB": 512,
+    "maxCpuPercent": 50,
+    "allowedPaths": [
+      "~/.powsy365/alexis/plugins/power_flow_tool/",
+      "~/.powsy365/alexis/logs/",
+      "~/powsy365/results/"
+    ],
+    "blockedPaths": [
+      "/etc/",
+      "/usr/bin/",
+      "C:\\Windows\\System32"
+    ]
+  },
+  "tags": [
+    "power-flow",
+    "analysis",
+    "newton-raphson",
+    "gauss-seidel",
+    "fast-decoupled",
+    "visualization",
+    "export"
+  ],
+  "homepage": "https://powsy365.com/plugins/power-flow-tool",
+  "documentation": "https://powsy365.com/docs/power-flow-tool"
+}

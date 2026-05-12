@@ -1,0 +1,252 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "POWSYS365 Alexis Plugin Manifest",
+  "description": "Schema de validacion para los manifests de plugins del sistema Alexis de POWSYS365",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "version",
+    "language",
+    "entryPoint"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Identificador unico del plugin. Solo letras, numeros, guiones y puntos.",
+      "pattern": "^[a-zA-Z0-9._-]+$",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "name": {
+      "type": "string",
+      "description": "Nombre descriptivo del plugin para mostrar en la interfaz.",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "version": {
+      "type": "string",
+      "description": "Version semantica del plugin (MAJOR.MINOR.PATCH).",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?(?:\\+[a-zA-Z0-9.-]+)?$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descripcion detallada de la funcionalidad del plugin.",
+      "maxLength": 2048
+    },
+    "author": {
+      "type": "string",
+      "description": "Nombre o identificador del autor del plugin.",
+      "maxLength": 256
+    },
+    "license": {
+      "type": "string",
+      "description": "Licencia del plugin.",
+      "enum": [
+        "MIT",
+        "Apache-2.0",
+        "GPL-3.0",
+        "LGPL-3.0",
+        "BSD-3-Clause",
+        "Proprietary",
+        "Other"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "description": "Lenguaje de programacion del plugin.",
+      "enum": [
+        "python",
+        "cpp",
+        "c++",
+        "javascript",
+        "js"
+      ]
+    },
+    "entryPoint": {
+      "type": "string",
+      "description": "Ruta relativa al archivo de entrada principal del plugin.",
+      "minLength": 1
+    },
+    "icon": {
+      "type": "string",
+      "description": "Ruta relativa al icono del plugin (PNG/SVG).",
+      "maxLength": 512
+    },
+    "minApiVersion": {
+      "type": "string",
+      "description": "Version minima de la API de Alexis requerida.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "maxApiVersion": {
+      "type": "string",
+      "description": "Version maxima de la API de Alexis soportada.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "permissions": {
+      "type": "array",
+      "description": "Lista de permisos RBAC solicitados por el plugin.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "network",
+          "filesystem",
+          "database",
+          "gui",
+          "system",
+          "electric_data",
+          "logging",
+          "configuration"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuracion por defecto del plugin."
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Dependencias externas requeridas (paquetes Python, librerias, etc.).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "optional": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "menuItems": {
+      "type": "array",
+      "description": "Items de menu a registrar en el IDE.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "shortcut": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          }
+        },
+        "required": ["label", "action"]
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Hooks del ciclo de vida implementados.",
+      "properties": {
+        "onLoad": {
+          "type": "boolean",
+          "default": false
+        },
+        "onUnload": {
+          "type": "boolean",
+          "default": false
+        },
+        "onExecute": {
+          "type": "boolean",
+          "default": true
+        },
+        "onEnable": {
+          "type": "boolean",
+          "default": false
+        },
+        "onDisable": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "description": "Configuracion de sandboxing.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "networkAccess": {
+          "type": "boolean",
+          "default": false
+        },
+        "fileSystemAccess": {
+          "type": "boolean",
+          "default": true
+        },
+        "databaseAccess": {
+          "type": "boolean",
+          "default": false
+        },
+        "guiAccess": {
+          "type": "boolean",
+          "default": true
+        },
+        "systemAccess": {
+          "type": "boolean",
+          "default": false
+        },
+        "maxMemoryMB": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 16384,
+          "default": 512
+        },
+        "maxCpuPercent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50
+        },
+        "allowedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blockedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "description": "Etiquetas para categorizacion.",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri"
+    },
+    "repository": {
+      "type": "string",
+      "format": "uri"
+    },
+    "documentation": {
+      "type": "string",
+      "format": "uri"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,16 @@
+module POWSYS365
+
+# Core components
+MainWindow 1.0 main.qml
+SLDCanvas 1.0 SLDCanvas.qml
+BusComponent 1.0 BusComponent.qml
+LineComponent 1.0 LineComponent.qml
+GeneratorComponent 1.0 GeneratorComponent.qml
+LoadComponent 1.0 LoadComponent.qml
+TransformerComponent 1.0 TransformerComponent.qml
+Toolbar 1.0 Toolbar.qml
+PropertiesPanel 1.0 PropertiesPanel.qml
+
+# Theme singletons
+singleton DarkTheme 1.0 DarkTheme.qml
+singleton LightTheme 1.0 LightTheme.qml

@@ -1,5 +1,39 @@
-numpy>=2.3
-scipy>=1.15
+# POWSYS365 - Python Dependencies
+# ================================
+# Core numerical and data-science libraries
+numpy>=1.24
+scipy>=1.11
 pandas>=2.0
-pandapower>=3.0
-pybind11>=2.10
+
+# C++ binding support
+pybind11>=2.12
+
+# Visualization
+matplotlib>=3.7
+plotly>=5.18
+
+# Power-system simulation (optional, for OPF)
+pandapower>=2.13
+
+# AI / LLM integration
+langchain>=0.3
+llama-index>=0.12
+requests>=2.31
+openai>=1.0
+anthropic>=0.8
+
+# HTTP client for AI gateway
+httpx>=0.25
+
+# Database (pgvector support)
+psycopg2-binary>=2.9
+
+# Environment management
+python-dotenv>=1.0
+
+# Async support
+aiohttp>=3.9
+
+# Type hints and validation
+pydantic>=2.5
+typing-extensions>=4.8
