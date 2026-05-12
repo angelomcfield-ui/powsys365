@@ -1,0 +1,1 @@
+SELECT * FROM v_system_summary WHERE project_id = ?;

@@ -1,0 +1,1 @@
+SELECT * FROM results_short_circuit WHERE run_id = ? ORDER BY fault_bus;
