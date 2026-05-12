@@ -1,0 +1,5 @@
+numpy>=2.3
+scipy>=1.15
+pandas>=2.0
+pandapower>=3.0
+pybind11>=2.10
