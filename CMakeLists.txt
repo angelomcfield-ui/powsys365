@@ -74,6 +74,14 @@ option(BUILD_LICENSING    "Build license management module"          ON)
 option(BUILD_INTEGRATION  "Build integration connectors"             ON)
 option(BUILD_ICON_ENGINE  "Build icon rendering engine"              ON)
 option(BUILD_I18N         "Build internationalization"               ON)
+option(BUILD_IO           "Build import/export module (85+ formats)" ON)
+option(BUILD_GIS          "Build GIS/map module (12 CRS)"            ON)
+option(BUILD_XTALK        "Build xTalk communication module"         ON)
+option(BUILD_LEGAL        "Build legal/GDPR module"                  ON)
+option(BUILD_AUDIO        "Build audio engine (OpenAL)"              ON)
+option(BUILD_HELP         "Build help/manual module"                 ON)
+option(BUILD_LINE_DESIGN  "Build line design module"                 ON)
+option(BUILD_CONFIG       "Build configuration module"               ON)
 option(BUILD_SHARED_LIBS  "Build shared libraries instead of static"  OFF)
 option(ENABLE_OPENMP      "Enable OpenMP parallelization"            ON)
 option(ENABLE_SANITIZERS  "Enable Address/UB sanitizers (Debug)"     OFF)
@@ -329,6 +337,38 @@ endif()
 
 if(BUILD_I18N)
     add_subdirectory(i18n)
+endif()
+
+if(BUILD_IO)
+    add_subdirectory(io)
+endif()
+
+if(BUILD_GIS)
+    add_subdirectory(gis)
+endif()
+
+if(BUILD_XTALK)
+    add_subdirectory(xtalk)
+endif()
+
+if(BUILD_LEGAL)
+    add_subdirectory(legal)
+endif()
+
+if(BUILD_AUDIO)
+    add_subdirectory(audio)
+endif()
+
+if(BUILD_HELP)
+    add_subdirectory(help)
+endif()
+
+if(BUILD_LINE_DESIGN)
+    add_subdirectory(line_design)
+endif()
+
+if(BUILD_CONFIG)
+    add_subdirectory(config)
 endif()
 
 if(BUILD_TESTS)
