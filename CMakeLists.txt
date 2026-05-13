@@ -10,9 +10,9 @@ cmake_minimum_required(VERSION 3.31)
 # Project Definition
 # =============================================================================
 project(POWSYS365
-    VERSION 1.0.0
-    DESCRIPTION "Power System Analysis Platform - Multi-platform build system"
-    HOMEPAGE_URL "https://github.com/powsybl/powsys365"
+    VERSION 3.0.0
+    DESCRIPTION "POWSYS365 - Power System Analysis Platform v3.0.0"
+    HOMEPAGE_URL "https://github.com/angelomcfield-ui/powsys365"
     LANGUAGES CXX C
 )
 
@@ -59,17 +59,25 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # =============================================================================
 # Build Options
 # =============================================================================
-option(BUILD_UI          "Build Qt6-based GUI application"        ON)
-option(BUILD_PYTHON      "Build Python bindings (pybind11)"       ON)
-option(BUILD_TESTS       "Build unit and integration tests"       ON)
-option(BUILD_SCADA       "Build SCADA protocol libraries"         ON)
-option(BUILD_SIMULATION  "Build transient simulation engine"      ON)
-option(BUILD_IDE         "Build embedded IDE components"          ON)
-option(BUILD_AI          "Build AI/LLM integration module"        ON)
-option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
-option(ENABLE_OPENMP     "Enable OpenMP parallelization"          ON)
-option(ENABLE_SANITIZERS "Enable Address/UB sanitizers (Debug)"   OFF)
-option(BUILD_PACKAGING   "Enable CPack packaging targets"         ON)
+option(BUILD_UI           "Build Qt6-based GUI application"          ON)
+option(BUILD_PYTHON       "Build Python bindings (pybind11)"        ON)
+option(BUILD_TESTS        "Build unit and integration tests"         ON)
+option(BUILD_SCADA        "Build SCADA protocol libraries"           ON)
+option(BUILD_SIMULATION   "Build transient simulation engine"        ON)
+option(BUILD_IDE          "Build embedded IDE components"            ON)
+option(BUILD_AI           "Build AI/LLM integration module"          ON)
+option(BUILD_MODELS       "Build advanced equipment models"          ON)
+option(BUILD_HARMONICS    "Build harmonic analysis module"           ON)
+option(BUILD_MARKETS      "Build electricity markets module"         ON)
+option(BUILD_RELIABILITY  "Build reliability analysis module"        ON)
+option(BUILD_LICENSING    "Build license management module"          ON)
+option(BUILD_INTEGRATION  "Build integration connectors"             ON)
+option(BUILD_ICON_ENGINE  "Build icon rendering engine"              ON)
+option(BUILD_I18N         "Build internationalization"               ON)
+option(BUILD_SHARED_LIBS  "Build shared libraries instead of static"  OFF)
+option(ENABLE_OPENMP      "Enable OpenMP parallelization"            ON)
+option(ENABLE_SANITIZERS  "Enable Address/UB sanitizers (Debug)"     OFF)
+option(BUILD_PACKAGING    "Enable CPack packaging targets"           ON)
 
 # =============================================================================
 # CMake Modules Path
@@ -291,6 +299,38 @@ if(BUILD_UI AND QT6_FOUND)
     add_subdirectory(ui)
 endif()
 
+if(BUILD_MODELS)
+    add_subdirectory(models)
+endif()
+
+if(BUILD_HARMONICS)
+    add_subdirectory(harmonics)
+endif()
+
+if(BUILD_MARKETS)
+    add_subdirectory(markets)
+endif()
+
+if(BUILD_RELIABILITY)
+    add_subdirectory(reliability)
+endif()
+
+if(BUILD_LICENSING)
+    add_subdirectory(licensing)
+endif()
+
+if(BUILD_INTEGRATION)
+    add_subdirectory(integration)
+endif()
+
+if(BUILD_ICON_ENGINE)
+    add_subdirectory(icon_engine)
+endif()
+
+if(BUILD_I18N)
+    add_subdirectory(i18n)
+endif()
+
 if(BUILD_TESTS)
     include(CTest)
     enable_testing()
@@ -378,21 +418,29 @@ message(STATUS "║ macOS Architectures: ${CMAKE_OSX_ARCHITECTURES}             
 message(STATUS "║ macOS Deployment:    ${CMAKE_OSX_DEPLOYMENT_TARGET}                         ║")
 endif()
 message(STATUS "╠═══════════════════════════════════════════════════════════════╣")
-message(STATUS "║ BUILD_UI:         ${BUILD_UI}         ║")
-message(STATUS "║ BUILD_PYTHON:     ${BUILD_PYTHON}     ║")
-message(STATUS "║ BUILD_TESTS:      ${BUILD_TESTS}      ║")
-message(STATUS "║ BUILD_SCADA:      ${BUILD_SCADA}      ║")
-message(STATUS "║ BUILD_SIMULATION: ${BUILD_SIMULATION} ║")
-message(STATUS "║ BUILD_IDE:        ${BUILD_IDE}        ║")
-message(STATUS "║ BUILD_AI:         ${BUILD_AI}         ║")
+message(STATUS "║ BUILD_UI:          ${BUILD_UI}          ║")
+message(STATUS "║ BUILD_PYTHON:      ${BUILD_PYTHON}      ║")
+message(STATUS "║ BUILD_TESTS:       ${BUILD_TESTS}       ║")
+message(STATUS "║ BUILD_SCADA:       ${BUILD_SCADA}       ║")
+message(STATUS "║ BUILD_SIMULATION:  ${BUILD_SIMULATION}  ║")
+message(STATUS "║ BUILD_IDE:         ${BUILD_IDE}         ║")
+message(STATUS "║ BUILD_AI:          ${BUILD_AI}          ║")
+message(STATUS "║ BUILD_MODELS:      ${BUILD_MODELS}      ║")
+message(STATUS "║ BUILD_HARMONICS:   ${BUILD_HARMONICS}   ║")
+message(STATUS "║ BUILD_MARKETS:     ${BUILD_MARKETS}     ║")
+message(STATUS "║ BUILD_RELIABILITY: ${BUILD_RELIABILITY} ║")
+message(STATUS "║ BUILD_LICENSING:   ${BUILD_LICENSING}   ║")
+message(STATUS "║ BUILD_INTEGRATION: ${BUILD_INTEGRATION} ║")
+message(STATUS "║ BUILD_ICON_ENGINE: ${BUILD_ICON_ENGINE} ║")
+message(STATUS "║ BUILD_I18N:        ${BUILD_I18N}        ║")
 message(STATUS "╠═══════════════════════════════════════════════════════════════╣")
-message(STATUS "║ ENABLE_OPENMP:     ${ENABLE_OPENMP}     ║")
-message(STATUS "║ ENABLE_SANITIZERS: ${ENABLE_SANITIZERS} ║")
-message(STATUS "║ BUILD_PACKAGING:   ${BUILD_PACKAGING}   ║")
+message(STATUS "║ ENABLE_OPENMP:      ${ENABLE_OPENMP}      ║")
+message(STATUS "║ ENABLE_SANITIZERS:  ${ENABLE_SANITIZERS}  ║")
+message(STATUS "║ BUILD_PACKAGING:    ${BUILD_PACKAGING}    ║")
 message(STATUS "╠═══════════════════════════════════════════════════════════════╣")
-message(STATUS "║ Eigen3:           $ Eigen3_FOUND}                                ║")
-message(STATUS "║ PostgreSQL:       ${PostgreSQL_FOUND}                            ║")
-message(STATUS "║ OpenMP:           ${OpenMP_CXX_FOUND}                            ║")
-message(STATUS "║ Qt6:              ${Qt6_FOUND}                                   ║")
+message(STATUS "║ Eigen3:            ${Eigen3_FOUND}                             ║")
+message(STATUS "║ PostgreSQL:        ${PostgreSQL_FOUND}                         ║")
+message(STATUS "║ OpenMP:            ${OpenMP_CXX_FOUND}                         ║")
+message(STATUS "║ Qt6:               ${Qt6_FOUND}                                ║")
 message(STATUS "╚═══════════════════════════════════════════════════════════════╝")
 message(STATUS "")
