@@ -7,6 +7,9 @@
 #include <QPixmap>
 #include <QString>
 
+// Forward declaration
+class QQmlEngine;
+
 namespace powsys365 {
 namespace icon {
 
@@ -60,7 +63,7 @@ private:
 // ============================================================
 // QML Registration Helper
 // ============================================================
-void registerIconProvider();
+void registerIconProvider(QQmlEngine* engine);
 
 // ============================================================
 // URL Builder

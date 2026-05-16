@@ -11,7 +11,7 @@
 // =============================================================================
 
 #include <catch2/catch_all.hpp>
-#include <powsy365/math_utils.h>
+#include <math_utils.h>
 #include <Eigen/Sparse>
 #include <cmath>
 

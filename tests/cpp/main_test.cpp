@@ -1,14 +1,12 @@
 // =============================================================================
-// tests/cpp/main_test.cpp - Catch2 v3 Main Entry Point
+// tests/cpp/main_test.cpp - Catch2 v3 Test Utilities
 // =============================================================================
-// Provides the main() function for Catch2 v3 test runner.
-// All test suites are discovered automatically by the Catch2 framework.
-//
-// Build:  compile with all other test_*.cpp files and link against
-//         Catch2::Catch2WithMain (or define CATCH_CONFIG_MAIN here).
+// Provides shared test utilities and global fixtures for POWSYS365 test suite.
+// NOTE: Do NOT define CATCH_CONFIG_MAIN here; Catch2::Catch2WithMain is
+//       linked by CMake, which already provides the main() function.
+//       This file should only contain shared helpers and fixtures.
 // =============================================================================
 
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch_all.hpp>
 
 // =============================================================================

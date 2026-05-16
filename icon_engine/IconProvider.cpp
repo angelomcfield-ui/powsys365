@@ -160,13 +160,9 @@ IconProvider::ParsedId IconProvider::parseRequestId(const QString& id) {
 // ============================================================
 // QML Registration
 // ============================================================
-void registerIconProvider() {
-    // Register the image provider with the QML engine
-    // This should be called after QGuiApplication is created
-    // Usage in main.cpp:
-    //   QQmlEngine* engine = ...;
-    //   engine->addImageProvider(powsys365::icon::IconProvider::providerId(),
-    //                            new powsys365::icon::IconProvider());
+void registerIconProvider(QQmlEngine* engine) {
+    if (!engine) return;
+    engine->addImageProvider("powsys365", new IconProvider());
 }
 
 // ============================================================
