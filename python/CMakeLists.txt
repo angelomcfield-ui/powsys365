@@ -15,15 +15,7 @@ endif()
 # Python module: _powsys365_native
 # ---------------------------------------------------------------------------
 pybind11_add_module(_powsys365_native
-    src/bindings.cpp
-    src/power_system_bindings.cpp
-    src/load_flow_bindings.cpp
-    src/network_topology_bindings.cpp
-    src/bus_bindings.cpp
-    src/branch_bindings.cpp
-    src/generator_bindings.cpp
-    src/load_bindings.cpp
-    src/utils_bindings.cpp
+    bindings.cpp
 )
 
 # ---------------------------------------------------------------------------

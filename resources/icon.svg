@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A1628"/>
+      <stop offset="100%" style="stop-color:#1A3A5C"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00D4FF"/>
+      <stop offset="50%" style="stop-color:#0A84FF"/>
+      <stop offset="100%" style="stop-color:#5E5CE6"/>
+    </linearGradient>
+    <radialGradient id="center" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#00D4FF"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <!-- Outer ring -->
+  <circle cx="512" cy="512" r="420" fill="none" stroke="url(#glow)" stroke-width="8" opacity="0.3"/>
+  <!-- Middle ring -->
+  <circle cx="512" cy="512" r="360" fill="none" stroke="url(#glow)" stroke-width="4" opacity="0.5"/>
+  <!-- Inner ring -->
+  <circle cx="512" cy="512" r="300" fill="none" stroke="url(#glow)" stroke-width="2" opacity="0.7"/>
+  <!-- Power symbol P -->
+  <text x="340" y="600" font-family="SF Pro Display, -apple-system, sans-serif" font-size="280" font-weight="900" fill="#ffffff" letter-spacing="-10">P</text>
+  <!-- Power symbol S -->
+  <text x="560" y="600" font-family="SF Pro Display, -apple-system, sans-serif" font-size="280" font-weight="900" fill="url(#glow)" letter-spacing="-10">S</text>
+  <!-- Center hub -->
+  <circle cx="512" cy="512" r="40" fill="url(#center)"/>
+  <!-- Circuit lines -->
+  <line x1="512" y1="92" x2="512" y2="180" stroke="url(#glow)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="512" y1="844" x2="512" y2="932" stroke="url(#glow)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="92" y1="512" x2="180" y2="512" stroke="url(#glow)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="844" y1="512" x2="932" y2="512" stroke="url(#glow)" stroke-width="6" stroke-linecap="round"/>
+  <!-- Diagonal lines -->
+  <line x1="222" y1="222" x2="280" y2="280" stroke="url(#glow)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="802" y1="802" x2="744" y2="744" stroke="url(#glow)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="802" y1="222" x2="744" y2="280" stroke="url(#glow)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="222" y1="802" x2="280" y2="744" stroke="url(#glow)" stroke-width="4" stroke-linecap="round"/>
+  <!-- Node dots -->
+  <circle cx="512" cy="92" r="12" fill="#00D4FF"/>
+  <circle cx="512" cy="932" r="12" fill="#00D4FF"/>
+  <circle cx="92" cy="512" r="12" fill="#00D4FF"/>
+  <circle cx="932" cy="512" r="12" fill="#00D4FF"/>
+  <circle cx="222" cy="222" r="8" fill="#0A84FF"/>
+  <circle cx="802" cy="802" r="8" fill="#0A84FF"/>
+  <circle cx="802" cy="222" r="8" fill="#0A84FF"/>
+  <circle cx="222" cy="802" r="8" fill="#0A84FF"/>
+</svg>

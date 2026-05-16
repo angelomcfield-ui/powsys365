@@ -213,7 +213,7 @@ if(NOT Eigen3_FOUND)
     set(EIGEN_BUILD_PKGCONFIG OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(eigen)
 else()
-    add_library(Eigen3::Eigen ALIAS Eigen3::Eigen)
+    # Eigen3 already found via find_package, ALIAS already exists
 endif()
 
 # Make FetchContent available

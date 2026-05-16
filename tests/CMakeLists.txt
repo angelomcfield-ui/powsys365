@@ -34,9 +34,14 @@ if(TEST_UTILS_SOURCES)
 endif()
 
 # ---------------------------------------------------------------------------
-# Core Unit Tests
+# Core Unit Tests (from cpp/ and core/ subdirs)
 # ---------------------------------------------------------------------------
-file(GLOB CORE_UNIT_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cpp")
+set(CORE_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cpp" "${CMAKE_CURRENT_SOURCE_DIR}/core")
+set(CORE_UNIT_TESTS "")
+foreach(dir ${CORE_TEST_DIRS})
+    file(GLOB found CONFIGURE_DEPENDS "${dir}/*.cpp")
+    list(APPEND CORE_UNIT_TESTS ${found})
+endforeach()
 if(CORE_UNIT_TESTS)
     add_executable(test_core ${CORE_UNIT_TESTS})
     target_link_libraries(test_core
@@ -51,7 +56,12 @@ endif()
 # ---------------------------------------------------------------------------
 # Math & Linear Algebra Tests
 # ---------------------------------------------------------------------------
-file(GLOB MATH_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/math/*.cpp")
+set(MATH_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cpp" "${CMAKE_CURRENT_SOURCE_DIR}/math")
+set(MATH_TESTS "")
+foreach(dir ${MATH_TEST_DIRS})
+    file(GLOB found CONFIGURE_DEPENDS "${dir}/test_math*.cpp")
+    list(APPEND MATH_TESTS ${found})
+endforeach()
 if(MATH_TESTS)
     add_executable(test_math ${MATH_TESTS})
     target_link_libraries(test_math
@@ -66,7 +76,12 @@ endif()
 # ---------------------------------------------------------------------------
 # Load Flow Solver Tests
 # ---------------------------------------------------------------------------
-file(GLOB LOADFLOW_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/loadflow/*.cpp")
+set(LF_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cpp" "${CMAKE_CURRENT_SOURCE_DIR}/loadflow")
+set(LOADFLOW_TESTS "")
+foreach(dir ${LF_TEST_DIRS})
+    file(GLOB found CONFIGURE_DEPENDS "${dir}/test_load_flow*.cpp" "${dir}/test_loadflow*.cpp")
+    list(APPEND LOADFLOW_TESTS ${found})
+endforeach()
 if(LOADFLOW_TESTS)
     add_executable(test_loadflow ${LOADFLOW_TESTS})
     target_link_libraries(test_loadflow
@@ -82,7 +97,7 @@ endif()
 # Simulation Tests
 # ---------------------------------------------------------------------------
 if(BUILD_SIMULATION AND TARGET powsys365_simulation)
-    file(GLOB SIMULATION_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/simulation/*.cpp")
+    file(GLOB SIMULATION_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/cpp/test_sim*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/simulation/*.cpp")
     if(SIMULATION_TESTS)
         add_executable(test_simulation ${SIMULATION_TESTS})
         target_link_libraries(test_simulation
@@ -100,7 +115,7 @@ endif()
 # SCADA Protocol Tests
 # ---------------------------------------------------------------------------
 if(BUILD_SCADA AND TARGET powsys365_scada)
-    file(GLOB SCADA_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/scada/*.cpp")
+    file(GLOB SCADA_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/cpp/test_scada*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/scada/*.cpp")
     if(SCADA_TESTS)
         add_executable(test_scada ${SCADA_TESTS})
         target_link_libraries(test_scada
@@ -117,7 +132,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Results & Export Tests
 # ---------------------------------------------------------------------------
-file(GLOB RESULTS_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/results/*.cpp")
+file(GLOB RESULTS_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/cpp/test_result*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/results/*.cpp")
 if(RESULTS_TESTS)
     add_executable(test_results ${RESULTS_TESTS})
     target_link_libraries(test_results
@@ -134,7 +149,7 @@ endif()
 # AI Module Tests
 # ---------------------------------------------------------------------------
 if(BUILD_AI AND TARGET powsys365_ai)
-    file(GLOB AI_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/ai/*.cpp")
+    file(GLOB AI_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/cpp/test_ai*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/ai/*.cpp")
     if(AI_TESTS)
         add_executable(test_ai ${AI_TESTS})
         target_link_libraries(test_ai
@@ -151,7 +166,12 @@ endif()
 # ---------------------------------------------------------------------------
 # Integration Tests (multi-module)
 # ---------------------------------------------------------------------------
-file(GLOB INTEGRATION_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/integration/*.cpp")
+set(INT_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cpp" "${CMAKE_CURRENT_SOURCE_DIR}/integration")
+set(INTEGRATION_TESTS "")
+foreach(dir ${INT_TEST_DIRS})
+    file(GLOB found CONFIGURE_DEPENDS "${dir}/test_integration*.cpp" "${dir}/test_end_to_end*.cpp")
+    list(APPEND INTEGRATION_TESTS ${found})
+endforeach()
 if(INTEGRATION_TESTS)
     add_executable(test_integration ${INTEGRATION_TESTS})
     target_link_libraries(test_integration
@@ -170,7 +190,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Regression Tests (benchmark comparisons)
 # ---------------------------------------------------------------------------
-file(GLOB REGRESSION_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/regression/*.cpp")
+file(GLOB REGRESSION_TESTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/cpp/test_regression*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/regression/*.cpp")
 if(REGRESSION_TESTS)
     add_executable(test_regression ${REGRESSION_TESTS})
     target_link_libraries(test_regression
@@ -180,7 +200,6 @@ if(REGRESSION_TESTS)
             Catch2::Catch2WithMain
             $<TARGET_NAME_IF_EXISTS:powsys365_test_utils>
     )
-    # Regression tests may take longer; label them accordingly
     catch_discover_tests(test_regression
         TEST_PREFIX "regression."
         PROPERTIES LABELS "slow"
@@ -209,8 +228,16 @@ endif()
 set(CTEST_PARALLEL_LEVEL "auto" CACHE STRING "Parallel test execution level")
 set(CTEST_OUTPUT_ON_FAILURE ON CACHE BOOL "Print test output on failure" FORCE)
 
-# Add labels for CTest filtering
-set_tests_properties(test_core PROPERTIES LABELS "unit;core")
-set_tests_properties(test_math PROPERTIES LABELS "unit;math")
-set_tests_properties(test_loadflow PROPERTIES LABELS "unit;loadflow")
-set_tests_properties(test_integration PROPERTIES LABELS "integration")
+# Add labels for CTest filtering (only if targets exist)
+if(TARGET test_core)
+    set_tests_properties(test_core PROPERTIES LABELS "unit;core")
+endif()
+if(TARGET test_math)
+    set_tests_properties(test_math PROPERTIES LABELS "unit;math")
+endif()
+if(TARGET test_loadflow)
+    set_tests_properties(test_loadflow PROPERTIES LABELS "unit;loadflow")
+endif()
+if(TARGET test_integration)
+    set_tests_properties(test_integration PROPERTIES LABELS "integration")
+endif()

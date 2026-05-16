@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Bundle Identity -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>POWSYS365</string>
+    <key>CFBundleIconFile</key>
+    <string>POWSYS365</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.xnoxllc.powsys365</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>POWSYS365</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>3.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>300</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.science</string>
+
+    <!-- macOS UI -->
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key> NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
+
+    <!-- macOS Security / Sandbox (optional - disable for full filesystem access) -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+
+    <!-- File Types -->
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>POWSYS365 Power System Case</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.xnoxllc.powsys365.case</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>raw</string>
+                <string>psse</string>
+                <string>json</string>
+                <string>xml</string>
+                <string>cim</string>
+            </array>
+            <key>CFBundleTypeIconFile</key>
+            <string>case_file_icon</string>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>POWSYS365 Results</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>pdf</string>
+                <string>xlsx</string>
+                <string>csv</string>
+                <string>html</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- UTIs -->
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.xnoxllc.powsys365.case</string>
+            <key>UTTypeDescription</key>
+            <string>POWSYS365 Power System Case</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>raw</string>
+                    <string>psse</string>
+                    <string>json</string>
+                    <string>xml</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
+
+    <!-- Qt6 specific -->
+    <key>QtFrameworkVersion</key>
+    <string>6.5+</string>
+    <key>QtPluginPath</key>
+    <string>@executable_path/../PlugIns</string>
+
+    <!-- GPU / OpenGL -->
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
+
+    <!-- Hardware support -->
+    <key>LSArchitecturePriority</key>
+    <array>
+        <string>arm64</string>
+        <string>x86_64</string>
+    </array>
+
+    <!-- Copyright -->
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright (c) 2023-2026 XNOX L.L.C. All rights reserved.</string>
+    <key>CFBundleGetInfoString</key>
+    <string>POWSYS365 v3.0.0 - Power System Analysis Platform</string>
+</dict>
+</plist>

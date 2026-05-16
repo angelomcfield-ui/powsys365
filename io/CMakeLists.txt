@@ -48,58 +48,21 @@ set(IO_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/exporters/tabular_exporter.h
 )
 
+# ---- Create stub .cpp files for header-only modules if missing --------------
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/base_importer.cpp)
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/base_importer.cpp
+         "// Stub: base_importer.h is header-only with inline implementations\n")
+endif()
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/base_exporter.cpp)
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/base_exporter.cpp
+         "// Stub: base_exporter.h is header-only with inline implementations\n")
+endif()
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/import_types.cpp)
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/import_types.cpp
+         "// Stub: import_types.h is header-only with inline implementations\n")
+endif()
+
 # ---- Library target ---------------------------------------------------------
-add_library(powsys365_io STATIC ${IO_SOURCES} ${IO_HEADERS})
-
-# Note: base_importer.cpp, base_exporter.cpp, and import_types.cpp are header-only
-# convenience stubs. The real implementations are in the headers. We include them
-# for build system consistency.
-
-# If header-only, create empty .cpp files or comment out the above entries
-# For this build, we keep the header-only design with minimal .cpp files
-
-# Re-define sources excluding header-only .cpp entries
-set(IO_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/format_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/import_export_engine.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/post_import_validator.cpp
-    # Parsers
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/psse_raw_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/cim_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/geo_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/tabular_parser.cpp
-    # Exporters
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/psse_raw_exporter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/cim_exporter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/geo_exporter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/tabular_exporter.cpp
-)
-
-# Create stub .cpp files for header-only modules so the build doesn't break
-file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/base_importer.cpp
-     "// Stub: base_importer.h is header-only with inline implementations\n")
-file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/base_exporter.cpp
-     "// Stub: base_exporter.h is header-only with inline implementations\n")
-file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/import_types.cpp
-     "// Stub: import_types.h is header-only with inline implementations\n")
-
-set(IO_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/import_types.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/base_importer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/base_exporter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/format_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/import_export_engine.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/post_import_validator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/psse_raw_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/cim_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/geo_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/parsers/tabular_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/psse_raw_exporter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/cim_exporter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/geo_exporter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/exporters/tabular_exporter.cpp
-)
-
 add_library(powsys365_io STATIC ${IO_SOURCES} ${IO_HEADERS})
 
 target_include_directories(powsys365_io

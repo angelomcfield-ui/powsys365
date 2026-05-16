@@ -1,0 +1,42 @@
+#!/bin/bash
+# =============================================================================
+# POWSYS365 - macOS Launch Script
+# Universal Binary (x86_64 + arm64) for macOS 12.0+
+# =============================================================================
+
+# Resolve the actual binary path
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONTENTS_DIR="$(dirname "$SCRIPT_DIR")"
+RESOURCES_DIR="${CONTENTS_DIR}/Resources"
+FRAMEWORKS_DIR="${CONTENTS_DIR}/Frameworks"
+
+# Set Qt6 plugin path
+export QT_PLUGIN_PATH="${CONTENTS_DIR}/PlugIns"
+export QML2_IMPORT_PATH="${CONTENTS_DIR}/Resources/qml"
+
+# Set library path for bundled frameworks
+export DYLD_LIBRARY_PATH="${FRAMEWORKS_DIR}:${DYLD_LIBRARY_PATH}"
+export DYLD_FRAMEWORK_PATH="${FRAMEWORKS_DIR}:${DYLD_FRAMEWORK_PATH}"
+
+# Disable Qt WebEngine sandbox (for embedded docs)
+export QTWEBENGINE_DISABLE_SANDBOX=1
+
+# Set Python path for embedded Python
+export PYTHONPATH="${CONTENTS_DIR}/Resources/python:${PYTHONPATH}"
+
+# Locale detection
+if [ -z "$LANG" ]; then
+    export LANG="$(defaults read -g AppleLocale 2>/dev/null || echo 'en_US').UTF-8"
+fi
+
+# OpenMP thread count (use performance cores on Apple Silicon)
+if [ -z "$OMP_NUM_THREADS" ]; then
+    export OMP_NUM_THREADS="$(sysctl -n hw.ncpu 2>/dev/null || echo 8)"
+fi
+
+# Crash reporting
+export POWSYS365_CRASH_DIR="${HOME}/Library/Logs/POWSYS365"
+mkdir -p "$POWSYS365_CRASH_DIR"
+
+# Launch the actual binary
+exec "${SCRIPT_DIR}/POWSYS365_bin" "$@"
