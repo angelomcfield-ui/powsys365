@@ -1,0 +1,245 @@
+# =============================================================================
+# POWSYS365 - Continuous Integration Workflow
+# =============================================================================
+# Runs on every push to main branch and on pull requests.
+# Builds the application on macOS, Windows, and Linux with a matrix strategy.
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: '6.6.3'
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+jobs:
+  # ===========================================================================
+  # Build Matrix: macOS, Windows, Linux
+  # ===========================================================================
+  build:
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- macOS ---
+          - name: macOS
+            os: macos-13
+            platform: macos
+            arch: universal
+            cc: clang
+            cxx: clang++
+            preset: macos-universal-release
+            test_preset: macos-universal-test
+          # --- Windows ---
+          - name: Windows
+            os: windows-2022
+            platform: windows
+            arch: x64
+            cc: cl
+            cxx: cl
+            preset: windows-x64-release
+            test_preset: windows-x64-test
+          # --- Linux ---
+          - name: Linux
+            os: ubuntu-22.04
+            platform: linux
+            arch: x64
+            cc: gcc
+            cxx: g++
+            preset: linux-x64-release
+            test_preset: linux-x64-test
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout repository
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # 2. Configure ccache (all platforms)
+      # -----------------------------------------------------------------------
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.platform }}-${{ matrix.arch }}-${{ github.ref }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.h', '**/*.hpp') }}
+          restore-keys: |
+            ${{ matrix.platform }}-${{ matrix.arch }}-${{ github.ref }}-
+            ${{ matrix.platform }}-${{ matrix.arch }}-
+            ${{ matrix.platform }}-
+          max-size: 2G
+          verbose: 2
+
+      # -----------------------------------------------------------------------
+      # 3. Cache vcpkg (Windows & Linux)
+      # -----------------------------------------------------------------------
+      - name: Cache vcpkg
+        if: matrix.platform != 'macos'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            ${{ github.workspace }}/build/vcpkg_installed
+          key: vcpkg-${{ matrix.platform }}-${{ matrix.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            vcpkg-${{ matrix.platform }}-${{ matrix.arch }}-
+            vcpkg-${{ matrix.platform }}-
+
+      # -----------------------------------------------------------------------
+      # 4. Install Qt6 (all platforms)
+      # -----------------------------------------------------------------------
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: ${{ matrix.platform == 'macos' && 'mac' || matrix.platform == 'windows' && 'windows' || 'linux' }}
+          target: desktop
+          arch: ${{ matrix.platform == 'windows' && 'win64_msvc2019_64' || matrix.platform == 'macos' && '' || 'linux_gcc_64' }}
+          modules: 'qtcharts qtconnectivity qtdatavis3d qthttpserver qtimageformats qtmultimedia qtnetworkauth qtpositioning qtserialport qtshadertools qtspeech qtwebsockets qtwebview'
+          cache: true
+          cache-key-prefix: qt-${{ matrix.platform }}-${{ env.QT_VERSION }}
+
+      # -----------------------------------------------------------------------
+      # 5. Install platform dependencies
+      # -----------------------------------------------------------------------
+
+      # --- macOS dependencies ---
+      - name: Install macOS dependencies
+        if: matrix.platform == 'macos'
+        run: |
+          brew update
+          brew install cmake ninja eigen pybind11 nlohmann-json postgresql@15 pkg-config ccache
+          # Link postgresql
+          brew link postgresql@15 --force || true
+          # Verify installations
+          cmake --version
+          ninja --version
+          pg_config --version || true
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+
+      # --- Windows dependencies ---
+      - name: Install Windows dependencies
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          # Install vcpkg
+          if (-not (Test-Path "$env:VCPKG_ROOT")) {
+            git clone https://github.com/Microsoft/vcpkg.git "$env:VCPKG_ROOT"
+            & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat"
+          }
+          # Install dependencies via vcpkg
+          & "$env:VCPKG_ROOT\vcpkg.exe" install eigen3:x64-windows pybind11:x64-windows nlohmann-json:x64-windows libpq:x64-windows
+          # Setup MSVC environment
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          echo "VCPKG_ROOT=$env:VCPKG_ROOT" >> $env:GITHUB_ENV
+          echo "VCPKG_DEFAULT_TRIPLET=x64-windows" >> $env:GITHUB_ENV
+          echo "CCACHE_DIR=$env:USERPROFILE\.ccache" >> $env:GITHUB_ENV
+
+      # --- Linux dependencies ---
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build \
+            libeigen3-dev \
+            libpq-dev postgresql-client \
+            pybind11-dev python3-dev \
+            nlohmann-json3-dev \
+            libgl1-mesa-dev libxkbcommon-x11-dev \
+            libxcb-cursor0 libxcb-keysyms1-dev \
+            libxcb-shape0-dev libxcb-xinerama0-dev \
+            libxcb-xkb-dev libxcb-randr0-dev \
+            libxcb-image0-dev libxcb-sync-dev \
+            libxcb-xfixes0-dev libxcb-dri2-0-dev \
+            libxcb-glx0-dev libxcb-dri3-dev \
+            libxcb-present-dev libxcb-composite0-dev \
+            libxcb-ewmh-dev libxcb-res0-dev \
+            libxcb-icccm4-dev libxcb-record0-dev \
+            libfontconfig1-dev libfreetype6-dev \
+            libx11-dev libxext-dev libxfixes-dev \
+            libxi-dev libxrender-dev libxcb1-dev \
+            libx11-xcb-dev libsm-dev libice-dev \
+            libdbus-1-dev libssl-dev \
+            ccache build-essential
+          # Verify
+          cmake --version
+          ninja --version
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+
+      # -----------------------------------------------------------------------
+      # 6. Configure CMake
+      # -----------------------------------------------------------------------
+      - name: Configure CMake
+        run: |
+          if [ "${{ matrix.platform }}" = "macos" ]; then
+            cmake --preset ${{ matrix.preset }} \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+          elif [ "${{ matrix.platform }}" = "windows" ]; then
+            cmake --preset ${{ matrix.preset }} \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+              -DVCPKG_TARGET_TRIPLET=x64-windows
+          else
+            cmake --preset ${{ matrix.preset }} \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          fi
+        shell: bash
+
+      # -----------------------------------------------------------------------
+      # 7. Build
+      # -----------------------------------------------------------------------
+      - name: Build
+        run: |
+          cmake --build --preset ${{ matrix.preset }} --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        shell: bash
+
+      # -----------------------------------------------------------------------
+      # 8. Run tests
+      # -----------------------------------------------------------------------
+      - name: Run tests
+        run: |
+          ctest --preset ${{ matrix.test_preset }} --output-on-failure --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        shell: bash
+        continue-on-error: false
+
+      # -----------------------------------------------------------------------
+      # 9. Upload build artifacts (for inspection)
+      # -----------------------------------------------------------------------
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: powsys365-${{ matrix.platform }}-${{ matrix.arch }}-ci
+          path: |
+            build/${{ matrix.preset }}/bin/
+            build/${{ matrix.preset }}/POWSYS365*
+          if-no-files-found: warn
+          retention-days: 3
+
+      # -----------------------------------------------------------------------
+      # 10. Print ccache statistics
+      # -----------------------------------------------------------------------
+      - name: ccache statistics
+        run: |
+          ccache -s || true
+        shell: bash

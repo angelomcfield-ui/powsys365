@@ -1,0 +1,633 @@
+# =============================================================================
+# POWSYS365 - Release Workflow
+# =============================================================================
+# Triggered on version tags (v*).
+# Builds release binaries for macOS (Universal), Windows (x64), and Linux (x64).
+# Creates a GitHub Release with all artifacts, auto-generated notes, and SHA256
+# checksums.
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: '6.6.3'
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+jobs:
+  # ===========================================================================
+  # BUILD: macOS Universal Binary
+  # ===========================================================================
+  build-macos:
+    name: Build macOS (Universal)
+    runs-on: macos-13
+
+    outputs:
+      artifact-name: ${{ steps.set-output.outputs.artifact-name }}
+
+    steps:
+      # --- 1. Checkout ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # --- 2. ccache ---
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: release-macos-universal-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.h', '**/*.hpp') }}
+          restore-keys: |
+            release-macos-universal-
+          max-size: 2G
+
+      # --- 3. Qt6 ---
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: mac
+          target: desktop
+          modules: 'qtcharts qtconnectivity qtdatavis3d qthttpserver qtimageformats qtmultimedia qtnetworkauth qtpositioning qtserialport qtshadertools qtspeech qtwebsockets qtwebview'
+          cache: true
+          cache-key-prefix: qt-macos-release-${{ env.QT_VERSION }}
+
+      # --- 4. Dependencies ---
+      - name: Install macOS dependencies
+        run: |
+          brew update
+          brew install cmake ninja eigen pybind11 nlohmann-json postgresql@15 pkg-config ccache create-dmg
+          brew link postgresql@15 --force || true
+          cmake --version
+          ninja --version
+
+      # --- 5. Configure & Build Universal Binary ---
+      - name: Configure CMake (Universal)
+        run: |
+          cmake --preset macos-universal-release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: |
+          cmake --build --preset macos-universal-release --parallel $(sysctl -n hw.ncpu)
+
+      # --- 6. Run tests ---
+      - name: Run tests
+        run: |
+          ctest --preset macos-universal-test --output-on-failure --parallel $(sysctl -n hw.ncpu)
+
+      # --- 7. Package .app bundle ---
+      - name: Package .app bundle
+        run: |
+          APP_NAME="POWSYS365"
+          BUILD_DIR="build/macos-universal-release"
+          APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
+
+          # Verify app bundle exists
+          ls -la "${APP_BUNDLE}" || echo "Warning: .app bundle not found at expected path"
+
+          # Run macdeployqt to bundle Qt frameworks
+          if [ -d "${APP_BUNDLE}" ]; then
+            macdeployqt "${APP_BUNDLE}" \
+              -qmldir="src" \
+              -verbose=2 \
+              -codesign="-" 2>/dev/null || true
+          fi
+
+          # Create DMG
+          DMG_NAME="${APP_NAME}-v${GITHUB_REF_NAME#v}-macOS-universal.dmg"
+          mkdir -p release
+
+          if command -v create-dmg &> /dev/null; then
+            create-dmg \
+              --volname "${APP_NAME} Installer" \
+              --window-size 800 400 \
+              --icon-size 100 \
+              --app-drop-link 600 185 \
+              --icon "${APP_NAME}.app" 200 185 \
+              "release/${DMG_NAME}" \
+              "${APP_BUNDLE}" 2>/dev/null || true
+          fi
+
+          # Fallback: hdiutil if create-dmg fails
+          if [ ! -f "release/${DMG_NAME}" ]; then
+            TEMP_DMG="temp_${APP_NAME}.dmg"
+            hdiutil create -srcfolder "${APP_BUNDLE}" -volname "${APP_NAME}" -fs HFS+ -format UDRW -size 500m "${TEMP_DMG}"
+            DEVICE=$(hdiutil attach -readwrite -noverify "${TEMP_DMG}" | grep "Apple_HFS" | awk '{print $1}')
+            mkdir -p "/Volumes/${APP_NAME}/.background"
+            # Create basic DMG layout
+            hdiutil detach "${DEVICE}" || true
+            hdiutil convert "${TEMP_DMG}" -format UDZO -o "release/${DMG_NAME}"
+            rm -f "${TEMP_DMG}"
+          fi
+
+          ls -lh release/
+
+      # --- 8. Upload artifact ---
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: powsys365-macos-universal
+          path: release/*.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Set output
+        id: set-output
+        run: echo "artifact-name=powsys365-macos-universal" >> $GITHUB_OUTPUT
+
+      - name: ccache stats
+        run: ccache -s
+
+  # ===========================================================================
+  # BUILD: Windows x64 Release
+  # ===========================================================================
+  build-windows:
+    name: Build Windows (x64)
+    runs-on: windows-2022
+
+    outputs:
+      artifact-name: ${{ steps.set-output.outputs.artifact-name }}
+
+    steps:
+      # --- 1. Checkout ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # --- 2. ccache ---
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: release-windows-x64-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.h', '**/*.hpp') }}
+          restore-keys: |
+            release-windows-x64-
+          max-size: 2G
+
+      # --- 3. Cache vcpkg ---
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            ${{ github.workspace }}/build/vcpkg_installed
+          key: vcpkg-release-windows-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            vcpkg-release-windows-x64-
+
+      # --- 4. Qt6 ---
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          modules: 'qtcharts qtconnectivity qtdatavis3d qthttpserver qtimageformats qtmultimedia qtnetworkauth qtpositioning qtserialport qtshadertools qtspeech qtwebsockets qtwebview'
+          cache: true
+          cache-key-prefix: qt-windows-release-${{ env.QT_VERSION }}
+
+      # --- 5. Install vcpkg & dependencies ---
+      - name: Install vcpkg and dependencies
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "$env:VCPKG_ROOT")) {
+            git clone https://github.com/Microsoft/vcpkg.git "$env:VCPKG_ROOT"
+            & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat"
+          }
+          & "$env:VCPKG_ROOT\vcpkg.exe" install eigen3:x64-windows pybind11:x64-windows nlohmann-json:x64-windows libpq:x64-windows
+
+      # --- 6. Install Inno Setup ---
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress --yes
+          $env:PATH += ";C:\Program Files (x86)\Inno Setup 6"
+          echo "INNO_SETUP_DIR=C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_ENV
+
+      # --- 7. Configure & Build ---
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake --preset windows-x64-release `
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake --build --preset windows-x64-release --parallel $env:NUMBER_OF_PROCESSORS
+
+      # --- 8. Run tests ---
+      - name: Run tests
+        shell: pwsh
+        run: |
+          ctest --preset windows-x64-test --output-on-failure --parallel $env:NUMBER_OF_PROCESSORS
+
+      # --- 9. Package: .zip portable + .exe installer ---
+      - name: Package Windows binaries
+        shell: pwsh
+        run: |
+          $APP_NAME = "POWSYS365"
+          $VERSION = $env:GITHUB_REF_NAME -replace '^v', ''
+          $BUILD_DIR = "build\windows-x64-release"
+          $RELEASE_DIR = "release"
+
+          New-Item -ItemType Directory -Force -Path $RELEASE_DIR | Out-Null
+
+          # --- Create portable .zip ---
+          $WIN_DEPLOY_QT = "$env:Qt6_DIR\bin\windeployqt.exe"
+          $EXE_PATH = "$BUILD_DIR\bin\${APP_NAME}.exe"
+
+          if (Test-Path $EXE_PATH) {
+            # Run windeployqt to collect Qt DLLs
+            & $WIN_DEPLOY_QT `
+              "$EXE_PATH" `
+              --release `
+              --qmldir "src" `
+              --dir "$BUILD_DIR\deploy"
+
+            # Copy executable to deploy folder
+            Copy-Item "$EXE_PATH" -Destination "$BUILD_DIR\deploy\${APP_NAME}.exe" -Force
+
+            # Create .zip
+            $ZIP_NAME = "${APP_NAME}-v${VERSION}-windows-x64-portable.zip"
+            Compress-Archive -Path "$BUILD_DIR\deploy\*" -DestinationPath "$RELEASE_DIR\$ZIP_NAME" -Force
+          } else {
+            Write-Error "Executable not found at $EXE_PATH"
+            exit 1
+          }
+
+          # --- Create .exe installer with Inno Setup ---
+          $ISS_PATH = "$RELEASE_DIR\installer.iss"
+          $ISS_CONTENT = @"
+[Setup]
+AppName=${APP_NAME}
+AppVersion=${VERSION}
+DefaultDirName={autopf}\${APP_NAME}
+DefaultGroupName=${APP_NAME}
+OutputDir=.
+OutputBaseFilename=${APP_NAME}-v${VERSION}-windows-x64-setup
+Compression=lzma2
+SolidCompression=yes
+PrivilegesRequiredOverridesAllowed=dialog
+WizardStyle=modern
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Files]
+Source: "${BUILD_DIR}\deploy\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+
+[Icons]
+Name: "{group}\${APP_NAME}"; Filename: "{app}\${APP_NAME}.exe"
+Name: "{autodesktop}\${APP_NAME}"; Filename: "{app}\${APP_NAME}.exe"; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+
+[Run]
+Filename: "{app}\${APP_NAME}.exe"; Description: "Launch ${APP_NAME}"; Flags: nowait postinstall skipifsilent
+"@
+
+          $ISS_CONTENT | Out-File -FilePath $ISS_PATH -Encoding UTF8
+
+          # Build installer
+          $ISCC = "$env:INNO_SETUP_DIR\ISCC.exe"
+          & $ISCC $ISS_PATH
+
+          # Move installer to release directory
+          $SETUP_EXE = "${APP_NAME}-v${VERSION}-windows-x64-setup.exe"
+          if (Test-Path "$RELEASE_DIR\$SETUP_EXE") {
+            Write-Output "Installer created successfully: $SETUP_EXE"
+          }
+
+          # List release artifacts
+          Get-ChildItem -Path $RELEASE_DIR -Recurse
+
+      # --- 10. Upload artifacts ---
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: powsys365-windows-x64
+          path: |
+            release/*.exe
+            release/*.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Set output
+        id: set-output
+        run: echo "artifact-name=powsys365-windows-x64" >> $GITHUB_OUTPUT
+
+      - name: ccache stats
+        run: ccache -s
+
+  # ===========================================================================
+  # BUILD: Linux x64 Release
+  # ===========================================================================
+  build-linux:
+    name: Build Linux (x64)
+    runs-on: ubuntu-22.04
+
+    outputs:
+      artifact-name: ${{ steps.set-output.outputs.artifact-name }}
+
+    steps:
+      # --- 1. Checkout ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # --- 2. ccache ---
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: release-linux-x64-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.h', '**/*.hpp') }}
+          restore-keys: |
+            release-linux-x64-
+          max-size: 2G
+
+      # --- 3. Qt6 ---
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          modules: 'qtcharts qtconnectivity qtdatavis3d qthttpserver qtimageformats qtmultimedia qtnetworkauth qtpositioning qtserialport qtshadertools qtspeech qtwebsockets qtwebview'
+          cache: true
+          cache-key-prefix: qt-linux-release-${{ env.QT_VERSION }}
+
+      # --- 4. Dependencies ---
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build \
+            libeigen3-dev \
+            libpq-dev postgresql-client \
+            pybind11-dev python3-dev \
+            nlohmann-json3-dev \
+            libgl1-mesa-dev libxkbcommon-x11-dev \
+            libxcb-cursor0 libxcb-keysyms1-dev \
+            libxcb-shape0-dev libxcb-xinerama0-dev \
+            libxcb-xkb-dev libxcb-randr0-dev \
+            libxcb-image0-dev libxcb-sync-dev \
+            libxcb-xfixes0-dev libxcb-dri2-0-dev \
+            libxcb-glx0-dev libxcb-dri3-dev \
+            libxcb-present-dev libxcb-composite0-dev \
+            libxcb-ewmh-dev libxcb-res0-dev \
+            libxcb-icccm4-dev libxcb-record0-dev \
+            libfontconfig1-dev libfreetype6-dev \
+            libx11-dev libxext-dev libxfixes-dev \
+            libxi-dev libxrender-dev libxcb1-dev \
+            libx11-xcb-dev libsm-dev libice-dev \
+            libdbus-1-dev libssl-dev \
+            ccache build-essential \
+            appimagetool desktop-file-utils
+
+      # --- 5. Configure & Build ---
+      - name: Configure CMake
+        run: |
+          cmake --preset linux-x64-release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+      - name: Build
+        run: |
+          cmake --build --preset linux-x64-release --parallel $(nproc)
+
+      # --- 6. Run tests ---
+      - name: Run tests
+        run: |
+          ctest --preset linux-x64-test --output-on-failure --parallel $(nproc)
+
+      # --- 7. Package: .deb + AppImage ---
+      - name: Package Linux binaries
+        run: |
+          APP_NAME="POWSYS365"
+          VERSION="${GITHUB_REF_NAME#v}"
+          BUILD_DIR="build/linux-x64-release"
+          RELEASE_DIR="release"
+          mkdir -p "$RELEASE_DIR"
+
+          # --- Create .deb package ---
+          DEB_ROOT="${BUILD_DIR}/deb_package"
+          mkdir -p "${DEB_ROOT}/usr/bin"
+          mkdir -p "${DEB_ROOT}/usr/share/applications"
+          mkdir -p "${DEB_ROOT}/usr/share/${APP_NAME}/lib"
+          mkdir -p "${DEB_ROOT}/DEBIAN"
+
+          # Copy binary
+          cp "${BUILD_DIR}/bin/${APP_NAME}" "${DEB_ROOT}/usr/bin/" || \
+            cp "${BUILD_DIR}/${APP_NAME}" "${DEB_ROOT}/usr/bin/"
+          chmod 755 "${DEB_ROOT}/usr/bin/${APP_NAME}"
+
+          # Create desktop file
+          cat > "${DEB_ROOT}/usr/share/applications/${APP_NAME}.desktop" <<EOF
+[Desktop Entry]
+Name=${APP_NAME}
+Comment=Power Systems Analysis Application
+Exec=/usr/bin/${APP_NAME}
+Icon=${APP_NAME}
+Type=Application
+Categories=Science;Engineering;
+Terminal=false
+EOF
+
+          # Create control file
+          cat > "${DEB_ROOT}/DEBIAN/control" <<EOF
+Package: ${APP_NAME,,}
+Version: ${VERSION}
+Section: science
+Priority: optional
+Architecture: amd64
+Depends: libqt6widgets6, libqt6core6, libqt6gui6, libeigen3-dev, libpq5
+Maintainer: POWSYS365 Team <team@powsys365.com>
+Description: POWSYS365 - Power Systems Analysis
+ Advanced power systems analysis application with 23 modules
+ for electrical engineering simulation and analysis.
+EOF
+
+          # Build .deb
+          dpkg-deb --build "${DEB_ROOT}" "${RELEASE_DIR}/${APP_NAME,,}_${VERSION}_amd64.deb"
+
+          # --- Create AppImage ---
+          APPIMAGE_DIR="${BUILD_DIR}/AppDir"
+          mkdir -p "${APPIMAGE_DIR}/usr/bin"
+          mkdir -p "${APPIMAGE_DIR}/usr/lib"
+          mkdir -p "${APPIMAGE_DIR}/usr/share/applications"
+
+          # Copy binary
+          cp "${DEB_ROOT}/usr/bin/${APP_NAME}" "${APPIMAGE_DIR}/usr/bin/"
+          cp "${DEB_ROOT}/usr/share/applications/${APP_NAME}.desktop" "${APPIMAGE_DIR}/usr/share/applications/"
+          ln -s "usr/share/applications/${APP_NAME}.desktop" "${APPIMAGE_DIR}/${APP_NAME}.desktop"
+
+          # Copy application icon placeholder
+          touch "${APPIMAGE_DIR}/${APP_NAME}.png"
+
+          # Deploy Qt dependencies using linuxdeployqt or manual copy
+          LINUXDEPLOYQT_URL="https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+          if ! command -v linuxdeployqt &> /dev/null; then
+            wget -q "$LINUXDEPLOYQT_URL" -O /tmp/linuxdeployqt
+            chmod +x /tmp/linuxdeployqt
+            LINUXDEPLOYQT_BIN=/tmp/linuxdeployqt
+          else
+            LINUXDEPLOYQT_BIN=linuxdeployqt
+          fi
+
+          # Run linuxdeployqt to bundle Qt and system libraries
+          $LINUXDEPLOYQT_BIN "${APPIMAGE_DIR}/usr/share/applications/${APP_NAME}.desktop" \
+            -appimage \
+            -qmake="${Qt6_DIR}/bin/qmake" \
+            -verbose=2 \
+            -no-translations \
+            -bundle-non-qt-libs \
+            -extra-plugins=imageformats,platformthemes \
+            -output=appimage 2>/dev/null || true
+
+          # If linuxdeployqt fails, try appimagetool directly
+          if [ ! -f *.AppImage ]; then
+            echo "linuxdeployqt failed, trying appimagetool..."
+            appimagetool "${APPIMAGE_DIR}" "${RELEASE_DIR}/${APP_NAME}-v${VERSION}-x86_64.AppImage" || true
+          else
+            mv *.AppImage "${RELEASE_DIR}/${APP_NAME}-v${VERSION}-x86_64.AppImage" 2>/dev/null || true
+          fi
+
+          # Ensure AppImage has execute permission
+          if [ -f "${RELEASE_DIR}/${APP_NAME}-v${VERSION}-x86_64.AppImage" ]; then
+            chmod +x "${RELEASE_DIR}/${APP_NAME}-v${VERSION}-x86_64.AppImage"
+          fi
+
+          ls -lh "${RELEASE_DIR}/"
+
+      # --- 8. Upload artifacts ---
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: powsys365-linux-x64
+          path: |
+            release/*.deb
+            release/*.AppImage
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Set output
+        id: set-output
+        run: echo "artifact-name=powsys365-linux-x64" >> $GITHUB_OUTPUT
+
+      - name: ccache stats
+        run: ccache -s
+
+  # ===========================================================================
+  # RELEASE: Create GitHub Release with all artifacts
+  # ===========================================================================
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-macos, build-windows, build-linux]
+
+    permissions:
+      contents: write
+
+    steps:
+      # --- 1. Download all artifacts ---
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: powsys365-macos-universal
+          path: artifacts/macos/
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: powsys365-windows-x64
+          path: artifacts/windows/
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: powsys365-linux-x64
+          path: artifacts/linux/
+
+      # --- 2. Generate SHA256 checksums ---
+      - name: Generate SHA256 checksums
+        run: |
+          mkdir -p artifacts
+          cd artifacts
+          echo "## SHA256 Checksums" > ../CHECKSUMS.md
+          echo "" >> ../CHECKSUMS.md
+          echo '| File | SHA256 |' >> ../CHECKSUMS.md
+          echo '|------|--------|' >> ../CHECKSUMS.md
+          for dir in macos windows linux; do
+            if [ -d "$dir" ]; then
+              for f in "$dir"/*; do
+                if [ -f "$f" ]; then
+                  HASH=$(sha256sum "$f" | awk '{print $1}')
+                  BASENAME=$(basename "$f")
+                  echo "| ${BASENAME} | \`${HASH}\` |" >> ../CHECKSUMS.md
+                  # Also save individual .sha256 file
+                  echo "${HASH}  ${BASENAME}" > "${f}.sha256"
+                fi
+              done
+            fi
+          done
+          cat ../CHECKSUMS.md
+
+      # --- 3. Create GitHub Release ---
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "POWSYS365 ${{ github.ref_name }}"
+          body_path: CHECKSUMS.md
+          generate_release_notes: true
+          files: |
+            artifacts/macos/*.dmg
+            artifacts/windows/*.exe
+            artifacts/windows/*.zip
+            artifacts/linux/*.deb
+            artifacts/linux/*.AppImage
+            artifacts/**/*.sha256
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- 4. Summary ---
+      - name: Release Summary
+        run: |
+          echo "========================================"
+          echo "  POWSYS365 Release ${{ github.ref_name }}"
+          echo "========================================"
+          echo ""
+          echo "Artifacts released:"
+          ls -lh artifacts/macos/* 2>/dev/null || echo "  (no macOS artifacts)"
+          ls -lh artifacts/windows/* 2>/dev/null || echo "  (no Windows artifacts)"
+          ls -lh artifacts/linux/* 2>/dev/null || echo "  (no Linux artifacts)"
+          echo ""
+          echo "Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"

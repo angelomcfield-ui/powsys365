@@ -1,0 +1,31 @@
+[Desktop Entry]
+Version=1.5
+Type=Application
+Name=POWSYS365
+Name[es]=POWSYS365
+GenericName=Power System Analysis
+GenericName[es]=Análisis de Sistemas de Potencia
+Comment=Comprehensive Power System Analysis Platform
+Comment[es]=Plataforma Integral de Análisis de Sistemas de Potencia
+Exec=/opt/powsys365/bin/POWSYS365 %F
+Icon=/opt/powsys365/share/icons/powsys365.png
+Terminal=false
+StartupNotify=true
+StartupWMClass=POWSYS365
+Categories=Science;Engineering;Electronics;Physics;
+MimeType=application/x-powsys365-project;application/x-powsys365-model;application/x-powsys365-result;application/x-powsys365-case;application/x-powsys365-study;application/x-powsys365-workspace;
+Keywords=power;system;analysis;electrical;grid;simulation;scada;energy;utility;transmission;distribution;loadflow;shortcircuit;harmonics;reliability;
+Keywords[es]=potencia;sistema;analisis;electrico;red;simulacion;energia;transmision;distribucion;flujo;cortocircuito;armonicos;confiabilidad;
+Actions=NewProject;OpenRecent;
+
+[Desktop Action NewProject]
+Name=New Project
+Name[es]=Nuevo Proyecto
+Exec=/opt/powsys365/bin/POWSYS365 --new-project
+Icon=/opt/powsys365/share/icons/powsys365.png
+
+[Desktop Action OpenRecent]
+Name=Open Recent
+Name[es]=Abrir Reciente
+Exec=/opt/powsys365/bin/POWSYS365 --recent
+Icon=/opt/powsys365/share/icons/powsys365.png
